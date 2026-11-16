@@ -73,6 +73,7 @@ import { fileRouter } from './file';
 import { followUpActionRouter } from './followUpAction';
 import { generationRouter } from './generation';
 import { generationBatchRouter } from './generationBatch';
+import { generationShareRouter } from './generationShare';
 import { generationTopicRouter } from './generationTopic';
 import { goalRouter } from './goal';
 import { goalShareRouter } from './goalShare';
@@ -182,6 +183,7 @@ export const lambdaRouter = router({
   followUpAction: followUpActionRouter,
   generation: generationRouter,
   generationBatch: generationBatchRouter,
+  generationShare: generationShareRouter,
   generationTopic: generationTopicRouter,
   goal: goalRouter,
   goalShare: goalShareRouter,

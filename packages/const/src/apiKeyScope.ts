@@ -263,6 +263,9 @@ export const TRPC_NAMESPACE_API_KEY_RULES: Record<string, TrpcNamespaceScopeRule
   followUpAction: rw('chat:read', 'chat:write'),
   generation: { any: 'model:invoke' },
   generationBatch: { any: 'model:invoke' },
+  // a link share opens one generated image / video / song to anyone holding the
+  // link — the same authority as the file it lives in
+  generationShare: rw('file:read', 'file:write'),
   generationTopic: { any: 'model:invoke' },
   goal: rw('agent:read', 'agent:write'),
   // a share link publishes the goal's wrap-up to anyone holding it; restricted

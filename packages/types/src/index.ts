@@ -42,6 +42,7 @@ export * from './fileShare';
 export * from './followUpAction';
 export * from './ftsSearch';
 export * from './generation';
+export * from './generationShare';
 export * from './goal';
 export * from './goalArchive';
 export * from './goalReport';

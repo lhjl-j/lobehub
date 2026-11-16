@@ -15,6 +15,8 @@ import { type GenerationBatchAction } from './slices/generationBatch/action';
 import { createGenerationBatchSlice } from './slices/generationBatch/action';
 import { type GenerationConfigAction } from './slices/generationConfig/action';
 import { createGenerationConfigSlice } from './slices/generationConfig/action';
+import { type GenerationShareAction } from './slices/generationShare/action';
+import { createGenerationShareSlice } from './slices/generationShare/action';
 import { type GenerationTopicAction } from './slices/generationTopic/action';
 import { createGenerationTopicSlice } from './slices/generationTopic/action';
 
@@ -25,6 +27,7 @@ export interface ImageStore
     GenerationConfigAction,
     GenerationTopicAction,
     GenerationBatchAction,
+    GenerationShareAction,
     CreateImageAction,
     ResetableStore,
     ImageStoreState {}
@@ -32,6 +35,7 @@ export interface ImageStore
 type ImageStoreAction = GenerationConfigAction &
   GenerationTopicAction &
   GenerationBatchAction &
+  GenerationShareAction &
   CreateImageAction &
   ResetableStore;
 
@@ -47,6 +51,7 @@ const createStore: StateCreator<ImageStore, [['zustand/devtools', never]]> = (
     createGenerationConfigSlice(...parameters),
     createGenerationTopicSlice(...parameters),
     createGenerationBatchSlice(...parameters),
+    createGenerationShareSlice(...parameters),
     createCreateImageSlice(...parameters),
     new ImageStoreResetAction(...parameters),
   ]),
