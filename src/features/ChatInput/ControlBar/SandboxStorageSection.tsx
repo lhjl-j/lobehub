@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useCallback, useEffect, useRef } from 'react';
+import { memo, useCallback } from 'react';
 
 import { useActiveWorkspaceId } from '@/business/client/hooks/useActiveWorkspaceId';
 import SafeBoundary from '@/components/ErrorBoundary';
@@ -8,12 +8,8 @@ import { useUserStore } from '@/store/user';
 import { userProfileSelectors } from '@/store/user/selectors';
 
 import { useTopicId } from '../hooks/useTopicId';
+import { rememberSandboxSelection } from './rememberedSandboxDirectory';
 import SandboxDrivePicker from './SandboxDrivePicker';
-import {
-  beginSandboxPick,
-  flushDeferredSandboxPicks,
-  settleSandboxPick,
-} from './sandboxPickMemory';
 import { type SandboxSelection, useSandboxPlacement } from './useSandboxPlacement';
 import { useSandboxStorageAccess } from './useSandboxStorageAccess';
 import { useSeedDefaultSelection } from './useSeedDefaultSelection';
@@ -45,40 +41,14 @@ const SandboxStorageSectionInner = memo<SandboxStorageSectionProps>(({ agentId }
     agentId,
     useTopicId(),
   );
-  // Where the composer is now, read when a save lands; the workspace may have
-  // changed since the pick began.
-  const activeWorkspaceRef = useRef(workspaceId);
-
-  // Picks waiting for the user id are remembered once it arrives.
-  useEffect(() => {
-    activeWorkspaceRef.current = workspaceId;
-    if (userId) flushDeferredSandboxPicks({ userId, workspaceId });
-  }, [userId, workspaceId]);
-
   // Every pick that lands is remembered for the next conversation, which would
-  // otherwise start back at the drive's root. A failed write is not. The user
-  // is the one who made the pick; only when nobody was known yet is the id
-  // read again when the save lands, since it can arrive in the meantime.
+  // otherwise start back at the drive's root. A failed save is not.
   const pick = useCallback(
     async (next: SandboxSelection) => {
-      const seq = beginSandboxPick();
-      const pickedBy = userProfileSelectors.userId(useUserStore.getState());
       await setSelection(next);
-      settleSandboxPick(
-        {
-          agentId,
-          seq,
-          userId: pickedBy ?? userProfileSelectors.userId(useUserStore.getState()),
-          workspaceId,
-        },
-        next,
-        {
-          userId: userProfileSelectors.userId(useUserStore.getState()),
-          workspaceId: activeWorkspaceRef.current,
-        },
-      );
+      rememberSandboxSelection({ userId, workspaceId }, agentId, next);
     },
-    [agentId, setSelection, workspaceId],
+    [agentId, setSelection, userId, workspaceId],
   );
   useSeedDefaultSelection(agentId, {
     eligible,

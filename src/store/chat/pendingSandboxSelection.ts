@@ -58,40 +58,6 @@ export const setPendingSandboxSelection = (agentId: string, selection?: SandboxS
 };
 
 /**
- * Who the pending picks were made by. The map is keyed by agent only, and a
- * tab can switch to another account or workspace in place; picks made before
- * that switch belong to the previous one and must not be carried by the next
- * person's first send. The user id first becoming known is not a switch: a
- * pick made while it loaded is that user's own.
- */
-let pendingScope: { userId?: string | null; workspaceId?: string | null } | undefined;
-// Bumped on every switch, so work started before one can tell it is stale.
-let scopeGeneration = 0;
-
-/** Changes on every account or workspace switch; compare before and after an await. */
-export const getPendingSandboxScopeGeneration = (): number => scopeGeneration;
-
-/** Tell the pending picks who is active now; a switch drops every pick made before it. */
-export const syncPendingSandboxScope = (scope: {
-  userId?: string | null;
-  workspaceId?: string | null;
-}): void => {
-  const previous = pendingScope;
-  pendingScope = scope;
-  if (!previous) return;
-
-  const userSwitched = !!previous.userId && previous.userId !== scope.userId;
-  const workspaceSwitched = (previous.workspaceId ?? null) !== (scope.workspaceId ?? null);
-  if (!userSwitched && !workspaceSwitched) return;
-
-  scopeGeneration += 1;
-  if (map.size === 0) return;
-
-  map.clear();
-  emit();
-};
-
-/**
  * Selections the composer filled in itself rather than the person choosing
  * them: the plan's default placement. Kept by identity, so a pick — always a
  * new object — is never mistaken for one. The server needs the difference: a
@@ -135,20 +101,6 @@ export const setSandboxDefaultSelection = (agentId: string, selection?: SandboxS
 };
 
 /**
- * Move an agent's not-yet-picked default to a better one learned later — a
- * folder whose save finished after a new conversation had already been
- * seeded. Only touches what the composer filled in itself: a registered
- * default, and a pending slot holding a seeded value. A pick stays.
- */
-export const refreshSandboxDefaultSelection = (
-  agentId: string,
-  selection: SandboxSelection,
-): void => {
-  if (defaults.has(agentId)) setSandboxDefaultSelection(agentId, selection);
-  if (isPendingSandboxSelectionSeeded(agentId)) seedPendingSandboxSelection(agentId, selection);
-};
-
-/**
  * Whether the active workspace's plan includes a drive. A cached yes is taken
  * as is; a cached no is confirmed with the server first, because the cache is
  * persisted — an account that has just upgraded still reads no until its
@@ -180,13 +132,7 @@ export const resolvePendingSandboxSelection = async (
   if (picked) return picked;
 
   const fallback = defaults.get(agentId);
-  if (!fallback) return undefined;
-
-  const generation = scopeGeneration;
-  if (!(await isDriveEntitled())) return undefined;
-  // The account or workspace switched while the entitlement was asked: the
-  // fallback was the previous one's, and must not reach this send.
-  if (generation !== scopeGeneration) return map.get(agentId);
+  if (!fallback || !(await isDriveEntitled())) return undefined;
 
   // A pick made while the entitlement was in flight wins over the default.
   if (!map.has(agentId)) setPendingSandboxSelection(agentId, fallback);

@@ -1,4 +1,4 @@
-import { act, renderHook } from '@testing-library/react';
+import { renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -8,10 +8,7 @@ import {
   setPendingSandboxSelection,
 } from '@/store/chat/pendingSandboxSelection';
 
-import {
-  rememberedSandboxDirectoryKey,
-  rememberSandboxSelection,
-} from './rememberedSandboxDirectory';
+import { rememberSandboxSelection } from './rememberedSandboxDirectory';
 import { useSeedDefaultSelection } from './useSeedDefaultSelection';
 
 const getEntitlement = vi.hoisted(() => vi.fn());
@@ -135,36 +132,5 @@ describe('useSeedDefaultSelection', () => {
     rerender();
 
     expect(getPendingSandboxSelection(AGENT)).toEqual({ workingDirectory: 'projects/demo' });
-  });
-
-  // Another tab remembers a folder while this one holds a blank conversation.
-  it('follows a folder another tab remembers for a blank conversation', () => {
-    renderHook(() =>
-      useSeedDefaultSelection(AGENT, { eligible: true, entitled: true, hasTopic: false }),
-    );
-    expect(getPendingSandboxSelection(AGENT)).toEqual({ workingDirectory: '.' });
-
-    const key = rememberedSandboxDirectoryKey({ userId: 'user-a' }, AGENT)!;
-    rememberSandboxSelection({ userId: 'user-a' }, AGENT, { workingDirectory: 'from-tab-a' });
-    act(() => {
-      window.dispatchEvent(new StorageEvent('storage', { key }));
-    });
-
-    expect(getPendingSandboxSelection(AGENT)).toEqual({ workingDirectory: 'from-tab-a' });
-  });
-
-  it('leaves a pick made in this tab when another tab remembers a folder', () => {
-    setPendingSandboxSelection(AGENT, { workingDirectory: 'picked-here' });
-    renderHook(() =>
-      useSeedDefaultSelection(AGENT, { eligible: true, entitled: true, hasTopic: false }),
-    );
-
-    const key = rememberedSandboxDirectoryKey({ userId: 'user-a' }, AGENT)!;
-    rememberSandboxSelection({ userId: 'user-a' }, AGENT, { workingDirectory: 'from-tab-a' });
-    act(() => {
-      window.dispatchEvent(new StorageEvent('storage', { key }));
-    });
-
-    expect(getPendingSandboxSelection(AGENT)).toEqual({ workingDirectory: 'picked-here' });
   });
 });

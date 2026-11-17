@@ -8,7 +8,6 @@ import {
   setPendingSandboxSelection,
   setSandboxDefaultSelection,
   subscribePendingSandboxSelection,
-  syncPendingSandboxScope,
   toSandboxTopicMetadata,
 } from './pendingSandboxSelection';
 
@@ -171,43 +170,5 @@ describe('pendingSandboxSelection', () => {
 
       setSandboxDefaultSelection('agent-offline');
     });
-  });
-
-  describe('syncPendingSandboxScope', () => {
-    it('drops picks when the tab switches to another user or workspace', () => {
-      syncPendingSandboxScope({ userId: 'user-a', workspaceId: 'ws_1' });
-      setPendingSandboxSelection('agent-scope', { workingDirectory: 'a-folder' });
-
-      syncPendingSandboxScope({ userId: 'user-b', workspaceId: 'ws_1' });
-      expect(getPendingSandboxSelection('agent-scope')).toBeUndefined();
-
-      setPendingSandboxSelection('agent-scope', { workingDirectory: 'b-folder' });
-      syncPendingSandboxScope({ userId: 'user-b', workspaceId: 'ws_2' });
-      expect(getPendingSandboxSelection('agent-scope')).toBeUndefined();
-    });
-
-    it('keeps a pick made while the user id was still loading', () => {
-      syncPendingSandboxScope({ userId: undefined, workspaceId: 'ws_3' });
-      setPendingSandboxSelection('agent-loading', { workingDirectory: 'mine' });
-
-      syncPendingSandboxScope({ userId: 'user-a', workspaceId: 'ws_3' });
-      expect(getPendingSandboxSelection('agent-loading')).toEqual({ workingDirectory: 'mine' });
-      consumePendingSandboxSelection('agent-loading');
-    });
-  });
-
-  it("never hands the previous account's default to a send that awaited the entitlement across a switch", async () => {
-    syncPendingSandboxScope({ userId: 'user-a', workspaceId: 'ws_9' });
-    let answer!: (value: { entitled: boolean }) => void;
-    mocks.getEntitlement.mockReturnValueOnce(new Promise((resolve) => (answer = resolve)));
-    setSandboxDefaultSelection('agent-switch', { workingDirectory: 'a-folder' });
-
-    const pending = resolvePendingSandboxSelection('agent-switch');
-    syncPendingSandboxScope({ userId: 'user-b', workspaceId: 'ws_9' });
-    answer({ entitled: true });
-
-    await expect(pending).resolves.toBeUndefined();
-    expect(getPendingSandboxSelection('agent-switch')).toBeUndefined();
-    setSandboxDefaultSelection('agent-switch');
   });
 });

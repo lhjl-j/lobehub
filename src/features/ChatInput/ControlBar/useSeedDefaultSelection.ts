@@ -4,19 +4,14 @@ import { useActiveWorkspaceId } from '@/business/client/hooks/useActiveWorkspace
 import {
   getPendingSandboxSelection,
   isPendingSandboxSelectionSeeded,
-  refreshSandboxDefaultSelection,
   seedPendingSandboxSelection,
   setSandboxDefaultSelection,
-  syncPendingSandboxScope,
 } from '@/store/chat/pendingSandboxSelection';
 import { useUserStore } from '@/store/user';
 import { userProfileSelectors } from '@/store/user/selectors';
 
 import { resolveDefaultSandboxSelection } from './defaultSandboxSelection';
-import {
-  getRememberedSandboxDirectory,
-  rememberedSandboxDirectoryKey,
-} from './rememberedSandboxDirectory';
+import { getRememberedSandboxDirectory } from './rememberedSandboxDirectory';
 
 /**
  * Give a conversation that does not exist yet the plan's default place to
@@ -38,13 +33,6 @@ export const useSeedDefaultSelection = (
 ) => {
   const workspaceId = useActiveWorkspaceId();
   const userId = useUserStore(userProfileSelectors.userId);
-
-  // Picks made by whoever was active before an in-place account or workspace
-  // switch are dropped, so the next person's first send never carries them.
-  // Declared first so the seed below runs after the drop.
-  useEffect(() => {
-    syncPendingSandboxScope({ userId, workspaceId });
-  }, [userId, workspaceId]);
 
   // Cleared on unmount as well: once the run moves off the sandbox, nothing
   // should hand a sandbox folder to a conversation on a machine. Registered
@@ -78,26 +66,4 @@ export const useSeedDefaultSelection = (
       ),
     );
   }, [agentId, entitled, hasTopic, userId, workspaceId]);
-
-  // Another tab may remember a folder for the same user, workspace and agent
-  // while this tab holds a blank conversation; follow it, moving only the
-  // composer's own default — a pick made here stays.
-  useEffect(() => {
-    if (!eligible || typeof window === 'undefined') return;
-    const key = rememberedSandboxDirectoryKey({ userId, workspaceId }, agentId);
-    if (!key) return;
-
-    const onStorage = (event: StorageEvent) => {
-      if (event.key !== key) return;
-      refreshSandboxDefaultSelection(
-        agentId,
-        resolveDefaultSandboxSelection(
-          workspaceId,
-          getRememberedSandboxDirectory({ userId, workspaceId }, agentId),
-        ),
-      );
-    };
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
-  }, [agentId, eligible, userId, workspaceId]);
 };
